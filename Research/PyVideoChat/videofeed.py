@@ -1,6 +1,7 @@
 import cv2
 from cv2.cv import *
 import Image
+import numpy as np
 
 class VideoFeed:
 
@@ -15,18 +16,20 @@ class VideoFeed:
             self.capture = cv2.VideoCapture(self.camera_index)
 
     def get_frame(self):
-        self.frame = cv.QueryFrame(self.capture)
-        self.c = cv.WaitKey(1)
+        self.frame = self.capture.read()
+        self.c = cv2.waitKey(1)
         if(self.c=="n"): #in "n" key is pressed while the popup window is in focus
             self.camera_index += 1 #try the next camera index
-            self.capture = cv.CaptureFromCAM(camera_index)
+            self.capture = cv2.VideoCapture(camera_index)
             if not self.capture: #if the next camera index didn't work, reset to 0.
                 self.camera_index = 0
-                self.capture = cv.CaptureFromCAM(camera_index)
-        jpegImg= Image.fromstring("RGB",cv.GetSize(self.frame),self.frame.tostring())
-        retStr=jpegImg.tostring("jpeg","RGB")
-        print "Compressed Size = ",len(retStr)
-        return retStr
+                self.capture = cv2.VideoCapture(camera_index)
+        #jpegImg= Image.fromstring("RGB",cv2.getSize(self.frame),self.frame.tostring())
+        #retStr=jpegImg.tostring("jpeg","RGB")
+        np_arr = np.fromstring(self.frame, np.uint8)
+        image_np = cv2.imdecode(np_arr, cv2.CV_LOAD_IMAGE_COLOR)
+        print "Compressed Size = ",len(image_np)
+        return image_np
 
 
     def set_frame(self,frame):
@@ -34,13 +37,13 @@ class VideoFeed:
         #self  - object of this class
         #frame - captured frame
         jpegPIL = Image.fromstring("RGB",(640,480),frame,"jpeg","RGB","raw")
-        cv_im = cv.CreateImage((640,480),cv.IPL_DEPTH_8U,3)
-        cv.SetData(cv_im,jpegPIL.tostring())
-        cv.ShowImage(self.name,cv_im)
+        cv_im = cv2.createImage((640,480),cv.IPL_DEPTH_8U,3)
+        cv2.setData(cv_im,jpegPIL.tostring())
+        cv2.showImage(self.name,cv_im)
         
 if __name__ == "__main__":
     vf = VideoFeed(1,"test",1) #initial mode,window name,capture
     while 1: #an infinite loop
-        m = vf.getFrame() #Getting new frames incrementally
+        m = vf.get_frame() #Getting new frames incrementally
         vf.set_frame(m)   #putting the modified image frame into viewport
         
